@@ -68,6 +68,7 @@ function MyTestCluster(opts) {
 
     var self = this;
 
+    self.assert = opts.assert;
     self.port = opts.port;
     self.server = http.createServer();
 
