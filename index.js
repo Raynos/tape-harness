@@ -30,7 +30,7 @@ function wrapCluster(tape, Cluster) {
                 assert.end = asyncEnd;
 
                 options.assert = assert;
-                var cluster = Cluster(options);
+                var cluster = new Cluster(options);
                 cluster.bootstrap(onCluster);
 
                 function onCluster(err) {
