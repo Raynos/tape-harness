@@ -14,7 +14,7 @@ function wrapCluster(tape, Cluster) {
         return tester;
 
         function tester(testName, options, fn) {
-            if (typeof options === 'function') {
+            if (!fn && typeof options === 'function') {
                 fn = options;
                 options = {};
             }
