@@ -52,3 +52,16 @@ MyTestCluster.test('a test', {
         assert.end();
     });
 });
+
+MyTestCluster.test('t.plan test', {
+      port: 8000
+}, function t(cluster, assert) {
+    request({
+        url: 'http://localhost:' + cluster.port + '/bar'
+    }, function onResponse(err, resp, body) {
+        assert.plan(3);
+        assert.ifError(err);
+        assert.equal(resp.statusCode, 200);
+        assert.equal(resp.body, '/bar');
+    });
+});

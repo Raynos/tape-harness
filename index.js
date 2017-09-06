@@ -26,8 +26,7 @@ function wrapCluster(tape, Cluster) {
             testFn(testName, onAssert);
 
             function onAssert(assert) {
-                var _end = assert.end;
-                assert.end = asyncEnd;
+                assert.on('end', asyncEnd);
 
                 options.assert = assert;
                 var cluster = new Cluster(options);
@@ -52,8 +51,6 @@ function wrapCluster(tape, Cluster) {
                         if (err2) {
                             assert.ifError(err2);
                         }
-
-                        _end.call(assert);
                     }
                 }
             }
