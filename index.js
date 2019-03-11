@@ -1,97 +1,97 @@
-'use strict';
+'use strict'
 
-module.exports = wrapCluster;
+module.exports = wrapCluster
 
-function wrapCluster(tape, Cluster) {
-    var test = buildTester(tape);
+function wrapCluster (tape, Cluster) {
+    var test = buildTester(tape)
 
-    test.only = buildTester(tape.only);
-    test.skip = buildTester(tape.skip);
+    test.only = buildTester(tape.only)
+    test.skip = buildTester(tape.skip)
 
-    return test;
+    return test
 
-    function buildTester(testFn) {
-        return tester;
+    function buildTester (testFn) {
+        return tester
 
-        function tester(testName, options, fn) {
+        function tester (testName, options, fn) {
             if (!fn && typeof options === 'function') {
-                fn = options;
-                options = {};
+                fn = options
+                options = {}
             }
 
             if (!fn) {
-                return testFn(testName);
+                return testFn(testName)
             }
 
-            testFn(testName, onAssert);
+            testFn(testName, onAssert)
 
-            function onAssert(assert) {
-                var _end = assert.end;
-                var onlyOnce = false;
-                assert.end = asyncEnd;
+            function onAssert (assert) {
+                var _end = assert.end
+                var onlyOnce = false
+                assert.end = asyncEnd
 
-                var _plan = assert.plan;
-                assert.plan = planFail;
+                var _plan = assert.plan
+                assert.plan = planFail
 
-                options.assert = assert;
-                var cluster = new Cluster(options);
-                cluster.bootstrap(onCluster);
+                options.assert = assert
+                var cluster = new Cluster(options)
+                cluster.bootstrap(onCluster)
 
-                function planFail(count) {
-                    var e = new Error('temporary message');
-                    var errorStack = e.stack;
-                    var errorLines = errorStack.split('\n');
+                function planFail (count) {
+                    var e = new Error('temporary message')
+                    var errorStack = e.stack
+                    var errorLines = errorStack.split('\n')
 
-                    var caller = errorLines[2];
+                    var caller = errorLines[2]
 
                     // TAP: call through because plan is called internally
-                    if (/node_modules[\/?][\\?\\?]?tap/.test(caller)) {
-                        return _plan.apply(assert, arguments);
+                    if (/node_modules[/?][\\?\\?]?tap/.test(caller)) {
+                        return _plan.apply(assert, arguments)
                     }
 
-                    throw new Error('tape-cluster: t.plan() is not supported');
+                    throw new Error('tape-cluster: t.plan() is not supported')
                 }
 
-                function onCluster(err) {
+                function onCluster (err) {
                     if (err) {
-                        return assert.end(err);
+                        return assert.end(err)
                     }
 
-                    var ret = fn(cluster, assert);
+                    var ret = fn(cluster, assert)
                     if (ret && ret.then) {
-                        ret.then(function success() {
+                        ret.then(function success () {
                             // user may have already called end()
                             if (!onlyOnce) {
-                                assert.end();
+                                assert.end()
                             }
-                        }, function fail(promiseError) {
-                            assert.ifError(promiseError);
+                        }, function fail (promiseError) {
+                            assert.ifError(promiseError)
                             // user may have already called end()
                             if (!onlyOnce) {
-                                assert.end();
+                                assert.end()
                             }
                         })
                     }
                 }
 
-                function asyncEnd(err) {
+                function asyncEnd (err) {
                     if (onlyOnce) {
-                        return _end.apply(assert, arguments);
+                        return _end.apply(assert, arguments)
                     }
-                    onlyOnce = true;
+                    onlyOnce = true
 
                     if (err) {
-                        assert.ifError(err);
+                        assert.ifError(err)
                     }
 
-                    cluster.close(onEnd);
+                    cluster.close(onEnd)
 
-                    function onEnd(err2) {
+                    function onEnd (err2) {
                         if (err2) {
-                            assert.ifError(err2);
+                            assert.ifError(err2)
                         }
 
-                        _end.call(assert, err);
+                        _end.call(assert, err)
                     }
                 }
             }

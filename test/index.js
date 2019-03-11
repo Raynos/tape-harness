@@ -1,262 +1,261 @@
-'use strict';
+'use strict'
 
-var tape = require('tape');
-var tap = require('tap');
-var http = require('http');
-var util = require('util');
-var request = require('request');
+var tape = require('tape')
+var tap = require('tap')
+var http = require('http')
+var util = require('util')
+var request = require('request')
 
-var tapeCluster = require('../index.js');
+var tapeCluster = require('../index.js')
 
-var promiseRequest = util.promisify(request);
+var promiseRequest = util.promisify(request)
 
-function MyTestCluster(opts) {
+function MyTestCluster (opts) {
     if (!(this instanceof MyTestCluster)) {
-        return new MyTestCluster(opts);
+        return new MyTestCluster(opts)
     }
 
-    var self = this;
+    var self = this
 
-    self.port = opts.port || 0;
-    self.server = http.createServer();
+    self.port = opts.port || 0
+    self.server = http.createServer()
 
-    self.server.on('request', onRequest);
+    self.server.on('request', onRequest)
 
-    function onRequest(req, res) {
-        res.end(req.url);
+    function onRequest (req, res) {
+        res.end(req.url)
     }
 }
 
-MyTestCluster.prototype.bootstrap = function bootstrap(cb) {
-    var self = this;
+MyTestCluster.prototype.bootstrap = function bootstrap (cb) {
+    var self = this
 
-    self.server.once('listening', function onListen() {
-        self.port = self.server.address().port;
-        cb();
-    });
-    self.server.listen(self.port);
-};
+    self.server.once('listening', function onListen () {
+        self.port = self.server.address().port
+        cb()
+    })
+    self.server.listen(self.port)
+}
 
-MyTestCluster.prototype.close = function close(cb) {
-    var self = this;
+MyTestCluster.prototype.close = function close (cb) {
+    var self = this
 
-    self.server.close(cb);
-};
+    self.server.close(cb)
+}
 
-MyTestCluster.test = tapeCluster(tape, MyTestCluster);
-MyTestCluster.tapTest = tapeCluster(tap.test, MyTestCluster);
+MyTestCluster.test = tapeCluster(tape, MyTestCluster)
+MyTestCluster.tapTest = tapeCluster(tap.test, MyTestCluster)
 
 MyTestCluster.test('a test', {
     port: 8000
-}, function t(cluster, assert) {
+}, function t (cluster, assert) {
     request({
         url: 'http://localhost:' + cluster.port + '/foo'
-    }, function onResponse(err, resp, body) {
-        assert.ifError(err);
+    }, function onResponse (err, resp, body) {
+        assert.ifError(err)
 
-        assert.equal(resp.statusCode, 200);
-        assert.equal(resp.body, '/foo');
+        assert.equal(resp.statusCode, 200)
+        assert.equal(resp.body, '/foo')
 
-        assert.end();
-    });
-});
+        assert.end()
+    })
+})
 
 MyTestCluster.tapTest('a tap test', {
     port: 0
-}, function t(cluster, assert) {
+}, function t (cluster, assert) {
     request({
         url: 'http://localhost:' + cluster.port + '/foo'
-    }, function onResponse(err, resp, body) {
-        assert.ifError(err);
+    }, function onResponse (err, resp, body) {
+        assert.ifError(err)
 
-        assert.equal(resp.statusCode, 200);
-        assert.equal(resp.body, '/foo');
+        assert.equal(resp.statusCode, 200)
+        assert.equal(resp.body, '/foo')
 
-        assert.end();
-    });
-});
+        assert.end()
+    })
+})
 
-MyTestCluster.test('no options', function t(cluster, assert) {
+MyTestCluster.test('no options', function t (cluster, assert) {
     request({
         url: 'http://localhost:' + cluster.port + '/foo'
-    }, function onResponse(err, resp, body) {
-        assert.ifError(err);
+    }, function onResponse (err, resp, body) {
+        assert.ifError(err)
 
-        assert.equal(resp.statusCode, 200);
-        assert.equal(resp.body, '/foo');
+        assert.equal(resp.statusCode, 200)
+        assert.equal(resp.body, '/foo')
 
-        assert.end();
-    });
-});
+        assert.end()
+    })
+})
 
-MyTestCluster.test('async await', async function t(cluster, assert) {
+MyTestCluster.test('async await', async function t (cluster, assert) {
     var resp = await promiseRequest({
         url: 'http://localhost:' + cluster.port + '/foo'
-    });
+    })
 
-    assert.equal(resp.statusCode, 200);
-    assert.equal(resp.body, '/foo');
+    assert.equal(resp.statusCode, 200)
+    assert.equal(resp.body, '/foo')
 
-    assert.end();
-});
+    assert.end()
+})
 
 MyTestCluster.test('async await no end',
-    async function t(cluster, assert) {
+    async function t (cluster, assert) {
         var resp = await promiseRequest({
             url: 'http://localhost:' + cluster.port + '/foo'
-        });
+        })
 
-        assert.equal(resp.statusCode, 200);
-        assert.equal(resp.body, '/foo');
-    });
+        assert.equal(resp.statusCode, 200)
+        assert.equal(resp.body, '/foo')
+    })
 
-
-MyTestCluster.test('using t.plan', function t(cluster, assert) {
-    var shouldFail = false;
+MyTestCluster.test('using t.plan', function t (cluster, assert) {
+    var shouldFail = false
     // jscs:disable disallowKeywords
     try {
-        assert.plan(3);
+        assert.plan(3)
     } catch (err) {
-        shouldFail = true;
+        shouldFail = true
         assert.equal(err.message,
-            'tape-cluster: t.plan() is not supported');
+            'tape-cluster: t.plan() is not supported')
     }
     // jscs:enable disallowKeywords
-    assert.ok(shouldFail);
+    assert.ok(shouldFail)
 
     request({
         url: 'http://localhost:' + cluster.port + '/foo'
-    }, function onResponse(err, resp, body) {
-        assert.ifError(err);
+    }, function onResponse (err, resp, body) {
+        assert.ifError(err)
 
-        assert.equal(resp.statusCode, 200);
-        assert.equal(resp.body, '/foo');
+        assert.equal(resp.statusCode, 200)
+        assert.equal(resp.body, '/foo')
 
-        assert.end();
-    });
-});
+        assert.end()
+    })
+})
 
-MyTestCluster.tapTest('using tap t.plan', function t(cluster, assert) {
-    var shouldFail = false;
+MyTestCluster.tapTest('using tap t.plan', function t (cluster, assert) {
+    var shouldFail = false
     // jscs:disable disallowKeywords
     try {
-        assert.plan(3);
+        assert.plan(3)
     } catch (err) {
-        shouldFail = true;
+        shouldFail = true
         assert.equal(err.message,
-            'tape-cluster: t.plan() is not supported');
+            'tape-cluster: t.plan() is not supported')
     }
     // jscs:enable disallowKeywords
-    assert.ok(shouldFail);
+    assert.ok(shouldFail)
 
     request({
         url: 'http://localhost:' + cluster.port + '/foo'
-    }, function onResponse(err, resp, body) {
-        assert.ifError(err);
+    }, function onResponse (err, resp, body) {
+        assert.ifError(err)
 
-        assert.equal(resp.statusCode, 200);
-        assert.equal(resp.body, '/foo');
+        assert.equal(resp.statusCode, 200)
+        assert.equal(resp.body, '/foo')
 
-        assert.end();
-    });
-});
+        assert.end()
+    })
+})
 
-MyTestCluster.test('no function name');
+MyTestCluster.test('no function name')
 
-tape('handles bootstrap error', function t(assert) {
-    function TestClass() {}
+tape('handles bootstrap error', function t (assert) {
+    function TestClass () {}
 
-    TestClass.prototype.bootstrap = function b(cb) {
-        cb(new Error('it failed'));
-    };
-    TestClass.prototype.close = function c(cb) {
-        cb();
-    };
+    TestClass.prototype.bootstrap = function b (cb) {
+        cb(new Error('it failed'))
+    }
+    TestClass.prototype.close = function c (cb) {
+        cb()
+    }
 
-    var myTest = tapeCluster(function testFn(name, fn) {
-        var hasError = false;
-        assert.equal(name, 'a name');
+    var myTest = tapeCluster(function testFn (name, fn) {
+        var hasError = false
+        assert.equal(name, 'a name')
         fn({
-            end: function end() {
-                assert.ok(hasError);
+            end: function end () {
+                assert.ok(hasError)
 
-                assert.end();
+                assert.end()
             },
-            ifError: function ifError(err) {
-                hasError = true;
-                assert.ok(err);
-                assert.equal(err.message, 'it failed');
+            ifError: function ifError (err) {
+                hasError = true
+                assert.ok(err)
+                assert.equal(err.message, 'it failed')
             }
-        });
-    }, TestClass);
+        })
+    }, TestClass)
 
-    myTest('a name', function _(assertLike) {
-        assert.fail('should not reach here');
-        assertLike.end();
-    });
-});
+    myTest('a name', function _ (assertLike) {
+        assert.fail('should not reach here')
+        assertLike.end()
+    })
+})
 
-tape('handles close error', function t(assert) {
-    function TestClass() {}
+tape('handles close error', function t (assert) {
+    function TestClass () {}
 
-    TestClass.prototype.bootstrap = function b(cb) {
-        cb();
-    };
-    TestClass.prototype.close = function c(cb) {
-        cb(new Error('it failed'));
-    };
+    TestClass.prototype.bootstrap = function b (cb) {
+        cb()
+    }
+    TestClass.prototype.close = function c (cb) {
+        cb(new Error('it failed'))
+    }
 
-    var myTest = tapeCluster(function testFn(name, fn) {
-        var hasError = false;
-        assert.equal(name, 'a name');
+    var myTest = tapeCluster(function testFn (name, fn) {
+        var hasError = false
+        assert.equal(name, 'a name')
         fn({
-            end: function end() {
-                assert.ok(hasError);
+            end: function end () {
+                assert.ok(hasError)
 
-                assert.end();
+                assert.end()
             },
-            ifError: function ifError(err) {
-                hasError = true;
-                assert.ok(err);
-                assert.equal(err.message, 'it failed');
+            ifError: function ifError (err) {
+                hasError = true
+                assert.ok(err)
+                assert.equal(err.message, 'it failed')
             }
-        });
-    }, TestClass);
+        })
+    }, TestClass)
 
-    myTest('a name', function _(cluster, assertLike) {
-        assert.ok(cluster);
-        assertLike.end();
-    });
-});
+    myTest('a name', function _ (cluster, assertLike) {
+        assert.ok(cluster)
+        assertLike.end()
+    })
+})
 
-tape('handles thrown exception', function t(assert) {
-    function TestClass() {}
+tape('handles thrown exception', function t (assert) {
+    function TestClass () {}
 
-    TestClass.prototype.bootstrap = function b(cb) {
-        cb();
-    };
-    TestClass.prototype.close = function c(cb) {
-        cb();
-    };
+    TestClass.prototype.bootstrap = function b (cb) {
+        cb()
+    }
+    TestClass.prototype.close = function c (cb) {
+        cb()
+    }
 
-    var myTest = tapeCluster(function testFn(name, fn) {
-        var hasError = false;
-        assert.equal(name, 'a name');
+    var myTest = tapeCluster(function testFn (name, fn) {
+        var hasError = false
+        assert.equal(name, 'a name')
         fn({
-            end: function end() {
-                assert.ok(hasError);
+            end: function end () {
+                assert.ok(hasError)
 
-                assert.end();
+                assert.end()
             },
-            ifError: function ifError(err) {
-                hasError = true;
-                assert.ok(err);
-                assert.equal(err.message, 'it failed');
+            ifError: function ifError (err) {
+                hasError = true
+                assert.ok(err)
+                assert.equal(err.message, 'it failed')
             }
-        });
-    }, TestClass);
+        })
+    }, TestClass)
 
-    myTest('a name', async function _(cluster, assertLike) {
-        throw new Error('it failed');
-    });
-});
+    myTest('a name', async function _ (cluster, assertLike) {
+        throw new Error('it failed')
+    })
+})
