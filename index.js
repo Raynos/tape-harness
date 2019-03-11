@@ -27,12 +27,30 @@ function wrapCluster(tape, Cluster) {
 
             function onAssert(assert) {
                 var _end = assert.end;
-                var onlyOnce = false
+                var onlyOnce = false;
                 assert.end = asyncEnd;
+
+                var _plan = assert.plan;
+                assert.plan = planFail;
 
                 options.assert = assert;
                 var cluster = new Cluster(options);
                 cluster.bootstrap(onCluster);
+
+                function planFail(count) {
+                    var e = new Error('temporary message');
+                    var errorStack = e.stack;
+                    var errorLines = errorStack.split('\n');
+
+                    var caller = errorLines[2];
+
+                    // TAP: call through because plan is called internally
+                    if (/node_modules[\/?][\\?\\?]?tap/.test(caller)) {
+                        return _plan.apply(assert, arguments);
+                    }
+
+                    throw new Error('tape-cluster: t.plan() is not supported');
+                }
 
                 function onCluster(err) {
                     if (err) {
@@ -44,9 +62,9 @@ function wrapCluster(tape, Cluster) {
 
                 function asyncEnd(err) {
                     if (onlyOnce) {
-                        return _end.apply(assert, arguments)
+                        return _end.apply(assert, arguments);
                     }
-                    onlyOnce = true
+                    onlyOnce = true;
 
                     if (err) {
                         assert.ifError(err);

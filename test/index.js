@@ -86,6 +86,56 @@ MyTestCluster.test('no options', function t(cluster, assert) {
     });
 });
 
+MyTestCluster.test('using t.plan', function t(cluster, assert) {
+    var shouldFail = false;
+    // jscs:disable disallowKeywords
+    try {
+        assert.plan(3);
+    } catch (err) {
+        shouldFail = true;
+        assert.equal(err.message,
+            'tape-cluster: t.plan() is not supported');
+    }
+    // jscs:enable disallowKeywords
+    assert.ok(shouldFail);
+
+    request({
+        url: 'http://localhost:' + cluster.port + '/foo'
+    }, function onResponse(err, resp, body) {
+        assert.ifError(err);
+
+        assert.equal(resp.statusCode, 200);
+        assert.equal(resp.body, '/foo');
+
+        assert.end();
+    });
+});
+
+MyTestCluster.tapTest('using tap t.plan', function t(cluster, assert) {
+    var shouldFail = false;
+    // jscs:disable disallowKeywords
+    try {
+        assert.plan(3);
+    } catch (err) {
+        shouldFail = true;
+        assert.equal(err.message,
+            'tape-cluster: t.plan() is not supported');
+    }
+    // jscs:enable disallowKeywords
+    assert.ok(shouldFail);
+
+    request({
+        url: 'http://localhost:' + cluster.port + '/foo'
+    }, function onResponse(err, resp, body) {
+        assert.ifError(err);
+
+        assert.equal(resp.statusCode, 200);
+        assert.equal(resp.body, '/foo');
+
+        assert.end();
+    });
+});
+
 MyTestCluster.test('no function name');
 
 tape('handles bootstrap error', function t(assert) {
