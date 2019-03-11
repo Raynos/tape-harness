@@ -1,6 +1,7 @@
 'use strict';
 
 var tape = require('tape');
+var tap = require('tap');
 var http = require('http');
 var request = require('request');
 
@@ -40,9 +41,25 @@ MyTestCluster.prototype.close = function close(cb) {
 };
 
 MyTestCluster.test = tapeCluster(tape, MyTestCluster);
+MyTestCluster.tapTest = tapeCluster(tap.test, MyTestCluster);
 
 MyTestCluster.test('a test', {
     port: 8000
+}, function t(cluster, assert) {
+    request({
+        url: 'http://localhost:' + cluster.port + '/foo'
+    }, function onResponse(err, resp, body) {
+        assert.ifError(err);
+
+        assert.equal(resp.statusCode, 200);
+        assert.equal(resp.body, '/foo');
+
+        assert.end();
+    });
+});
+
+MyTestCluster.tapTest('a tap test', {
+    port: 0
 }, function t(cluster, assert) {
     request({
         url: 'http://localhost:' + cluster.port + '/foo'

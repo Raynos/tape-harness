@@ -27,6 +27,7 @@ function wrapCluster(tape, Cluster) {
 
             function onAssert(assert) {
                 var _end = assert.end;
+                var onlyOnce = false
                 assert.end = asyncEnd;
 
                 options.assert = assert;
@@ -42,6 +43,11 @@ function wrapCluster(tape, Cluster) {
                 }
 
                 function asyncEnd(err) {
+                    if (onlyOnce) {
+                        return _end.apply(assert, arguments)
+                    }
+                    onlyOnce = true
+
                     if (err) {
                         assert.ifError(err);
                     }
@@ -53,7 +59,7 @@ function wrapCluster(tape, Cluster) {
                             assert.ifError(err2);
                         }
 
-                        _end.call(assert);
+                        _end.call(assert, err);
                     }
                 }
             }
