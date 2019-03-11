@@ -259,3 +259,40 @@ tape('handles thrown exception', function t (assert) {
         throw new Error('it failed')
     })
 })
+
+tape('handles thrown exception but also double end',
+    function t (assert) {
+        function TestClass () {}
+
+        TestClass.prototype.bootstrap = function b (cb) {
+            cb()
+        }
+        TestClass.prototype.close = function c (cb) {
+            cb()
+        }
+
+        var myTest = tapeCluster(function testFn (name, fn) {
+            var onlyOnce = false
+            assert.equal(name, 'a name')
+            fn({
+                end: function end () {
+                    if (onlyOnce) {
+                        assert.ok(false, 'double end')
+                    }
+                    onlyOnce = true
+                },
+                ifError: function ifError (err) {
+                    assert.ok(err)
+                    assert.equal(err.message, 'it failed')
+
+                    assert.ok(onlyOnce)
+                    assert.end()
+                }
+            })
+        }, TestClass)
+
+        myTest('a name', async function _ (cluster, assertLike) {
+            assertLike.end()
+            throw new Error('it failed')
+        })
+    })
