@@ -8,7 +8,7 @@
 
 <!-- [![NPM][npm-png]][npm] -->
 
-A helper to run integration tests against a cluster
+A helper to run integration tests against an application
 
 ## Motivation
 
@@ -19,6 +19,10 @@ a cluster of applications.
 Writing tests against such a cluster can be tedious without
 a helper to setup your cluster before and after every test.
 
+The `tape-cluster` package will setup your test harness / runner / application before each test block and spin them down after each test block.
+
+This functionality is similar to `beforeEach` or `afterEach` that might exist in other testing libraries but is instead implemented as a standalone library that's compatible with vanilla `tape` and `tap`
+
 ## Example
 
 Your test file
@@ -27,6 +31,7 @@ Your test file
 // test/what.js
 'use strict';
 
+var tape = require('tape');
 var request = require('request');
 
 var MyTestCluster = require('./lib/test-cluster.js');
@@ -43,6 +48,28 @@ MyTestCluster.test('a test', {
         assert.equal(resp.body, '/foo');
 
         assert.end();
+    });
+});
+
+tape('a test without tape-cluster', function t(assert) {
+    var cluster = new MyTestCluster({
+        port: 8000
+    });
+    cluster.bootstrap(function (err) {
+        assert.ifError(err);
+        request({
+            url: 'http://localhost:' + cluster.port + '/foo'
+        }, function onResponse(err, resp, body) {
+            assert.ifError(err);
+
+            assert.equal(resp.statusCode, 200);
+            assert.equal(resp.body, '/foo');
+
+            cluster.close(function (err) {
+                assert.ifError(err);
+                assert.end();
+            });
+    }); 
     });
 });
 ```
