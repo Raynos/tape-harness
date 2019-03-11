@@ -57,7 +57,21 @@ function wrapCluster(tape, Cluster) {
                         return assert.end(err);
                     }
 
-                    fn(cluster, assert);
+                    var ret = fn(cluster, assert);
+                    if (ret && ret.then) {
+                        ret.then(function success() {
+                            // user may have already called end()
+                            if (!onlyOnce) {
+                                assert.end();
+                            }
+                        }, function fail(promiseError) {
+                            assert.ifError(promiseError);
+                            // user may have already called end()
+                            if (!onlyOnce) {
+                                assert.end();
+                            }
+                        })
+                    }
                 }
 
                 function asyncEnd(err) {

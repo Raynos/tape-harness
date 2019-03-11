@@ -3,9 +3,12 @@
 var tape = require('tape');
 var tap = require('tap');
 var http = require('http');
+var util = require('util');
 var request = require('request');
 
 var tapeCluster = require('../index.js');
+
+var promiseRequest = util.promisify(request);
 
 function MyTestCluster(opts) {
     if (!(this instanceof MyTestCluster)) {
@@ -85,6 +88,28 @@ MyTestCluster.test('no options', function t(cluster, assert) {
         assert.end();
     });
 });
+
+MyTestCluster.test('async await', async function t(cluster, assert) {
+    var resp = await promiseRequest({
+        url: 'http://localhost:' + cluster.port + '/foo'
+    });
+
+    assert.equal(resp.statusCode, 200);
+    assert.equal(resp.body, '/foo');
+
+    assert.end();
+});
+
+MyTestCluster.test('async await no end',
+    async function t(cluster, assert) {
+        var resp = await promiseRequest({
+            url: 'http://localhost:' + cluster.port + '/foo'
+        });
+
+        assert.equal(resp.statusCode, 200);
+        assert.equal(resp.body, '/foo');
+    });
+
 
 MyTestCluster.test('using t.plan', function t(cluster, assert) {
     var shouldFail = false;
@@ -201,5 +226,37 @@ tape('handles close error', function t(assert) {
     myTest('a name', function _(cluster, assertLike) {
         assert.ok(cluster);
         assertLike.end();
+    });
+});
+
+tape('handles thrown exception', function t(assert) {
+    function TestClass() {}
+
+    TestClass.prototype.bootstrap = function b(cb) {
+        cb();
+    };
+    TestClass.prototype.close = function c(cb) {
+        cb();
+    };
+
+    var myTest = tapeCluster(function testFn(name, fn) {
+        var hasError = false;
+        assert.equal(name, 'a name');
+        fn({
+            end: function end() {
+                assert.ok(hasError);
+
+                assert.end();
+            },
+            ifError: function ifError(err) {
+                hasError = true;
+                assert.ok(err);
+                assert.equal(err.message, 'it failed');
+            }
+        });
+    }, TestClass);
+
+    myTest('a name', async function _(cluster, assertLike) {
+        throw new Error('it failed');
     });
 });
