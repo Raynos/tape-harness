@@ -69,7 +69,7 @@ tape('a test without tape-cluster', function t(assert) {
                 assert.ifError(err);
                 assert.end();
             });
-    }); 
+        }); 
     });
 });
 ```
