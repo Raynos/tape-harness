@@ -35,7 +35,14 @@ function wrapCluster (tape, Cluster) {
 
                 options.assert = assert
                 var cluster = new Cluster(options)
-                cluster.bootstrap(onCluster)
+                var ret = cluster.bootstrap(onCluster)
+                if (ret && ret.then) {
+                    ret.then(function success () {
+                        process.nextTick(onCluster)
+                    }, function fail (promiseError) {
+                        process.nextTick(onCluster, promiseError)
+                    })
+                }
 
                 function planFail (count) {
                     var e = new Error('temporary message')
@@ -84,7 +91,14 @@ function wrapCluster (tape, Cluster) {
                         assert.ifError(err)
                     }
 
-                    cluster.close(onEnd)
+                    var ret = cluster.close(onEnd)
+                    if (ret && ret.then) {
+                        ret.then(function success () {
+                            process.nextTick(onEnd)
+                        }, function fail (promiseError) {
+                            process.nextTick(onEnd, promiseError)
+                        })
+                    }
 
                     function onEnd (err2) {
                         if (err2) {

@@ -162,11 +162,93 @@ MyTestCluster.tapTest('using tap t.plan', function t (cluster, assert) {
 
 MyTestCluster.test('no function name')
 
+function MyPromiseTestCluster (opts) {
+    if (!(this instanceof MyPromiseTestCluster)) {
+        return new MyPromiseTestCluster(opts)
+    }
+
+    var self = this
+
+    self.port = opts.port || 0
+    self.server = http.createServer()
+
+    self.server.on('request', onRequest)
+
+    function onRequest (req, res) {
+        res.end(req.url)
+    }
+}
+
+MyPromiseTestCluster.prototype.bootstrap = async function bootstrap () {
+    return new Promise((resolve) => {
+        this.server.once('listening', () => {
+            this.port = this.server.address().port
+            resolve()
+        })
+        this.server.listen(this.port)
+    })
+}
+
+MyPromiseTestCluster.prototype.close = async function close () {
+    return new Promise((resolve, reject) => {
+        this.server.close((err) => {
+            if (err) return reject(err)
+            resolve()
+        })
+    })
+}
+
+MyPromiseTestCluster.test = tapeCluster(tape, MyPromiseTestCluster)
+
+MyPromiseTestCluster.test('async await promise', async function t (cluster, assert) {
+    var resp = await promiseRequest({
+        url: 'http://localhost:' + cluster.port + '/foo'
+    })
+
+    assert.equal(resp.statusCode, 200)
+    assert.equal(resp.body, '/foo')
+
+    assert.end()
+})
+
 tape('handles bootstrap error', function t (assert) {
     function TestClass () {}
 
     TestClass.prototype.bootstrap = function b (cb) {
         cb(new Error('it failed'))
+    }
+    TestClass.prototype.close = function c (cb) {
+        cb()
+    }
+
+    var myTest = tapeCluster(function testFn (name, fn) {
+        var hasError = false
+        assert.equal(name, 'a name')
+        fn({
+            end: function end () {
+                assert.ok(hasError)
+
+                assert.end()
+            },
+            ifError: function ifError (err) {
+                hasError = true
+                assert.ok(err)
+                assert.equal(err.message, 'it failed')
+            }
+        })
+    }, TestClass)
+
+    myTest('a name', function _ (assertLike) {
+        assert.fail('should not reach here')
+        assertLike.end()
+    })
+})
+
+tape('handles async bootstrap error', function t (assert) {
+    function TestClass () {}
+
+    TestClass.prototype.bootstrap = async function b (cb) {
+        throw new Error('it failed')
     }
     TestClass.prototype.close = function c (cb) {
         cb()
@@ -203,6 +285,39 @@ tape('handles close error', function t (assert) {
     }
     TestClass.prototype.close = function c (cb) {
         cb(new Error('it failed'))
+    }
+
+    var myTest = tapeCluster(function testFn (name, fn) {
+        var hasError = false
+        assert.equal(name, 'a name')
+        fn({
+            end: function end () {
+                assert.ok(hasError)
+
+                assert.end()
+            },
+            ifError: function ifError (err) {
+                hasError = true
+                assert.ok(err)
+                assert.equal(err.message, 'it failed')
+            }
+        })
+    }, TestClass)
+
+    myTest('a name', function _ (cluster, assertLike) {
+        assert.ok(cluster)
+        assertLike.end()
+    })
+})
+
+tape('handles async close error', function t (assert) {
+    function TestClass () {}
+
+    TestClass.prototype.bootstrap = function b (cb) {
+        cb()
+    }
+    TestClass.prototype.close = async function c (cb) {
+        throw new Error('it failed')
     }
 
     var myTest = tapeCluster(function testFn (name, fn) {
