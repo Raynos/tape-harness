@@ -69,7 +69,7 @@ tape('a test without tape-cluster', function t(assert) {
                 assert.ifError(err);
                 assert.end();
             });
-        }); 
+        });
     });
 });
 ```
@@ -118,6 +118,59 @@ MyTestCluster.prototype.close = function close(cb) {
 
     self.server.close(cb);
 };
+```
+
+## ES6 example
+
+```js
+const fetch = require('node-fetch')
+
+const MyTestCluster = require('./lib/test-cluster.js');
+
+MyTestCluster.test('a test', {
+    port: 8000
+}, async function t(cluster, assert) {
+    const res = await fetch(`http://localhost:${cluster.port}/foo`)
+
+    const text = await res.text()
+    assert.equal(res.status, 200)
+    assert.equal(text, '/foo')
+});
+```
+
+```js
+const tape = require('tape');
+const http = require('http');
+const tapeCluster = require('tape-cluster');
+
+class TestCluster {
+    constructor(opts) {
+        this.port = opts.port
+        this.server = http.createServer()
+
+        this.server.on('request', (req, res) => {
+            res.end(req.url)
+        })
+    }
+
+    async bootstrap() {
+        return new Promise((resolve) => {
+            this.server.once('listening', resolve)
+            this.server.listen(this.port)
+        })
+    }
+
+    async close() {
+        return new Promise((resolve, reject) => {
+            this.server.close((err) => {
+                if (err) return reject(err)
+                resolve()
+            })
+        })
+    }
+}
+
+TestCluster.test = tapeCluster(tape, TestCluster)
 ```
 
 ## Installation
