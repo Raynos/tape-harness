@@ -1,68 +1,18 @@
 'use strict'
 
 var tape = require('tape')
-var tap = require('tap')
 var http = require('http')
 var util = require('util')
 var request = require('request')
 
 var tapeCluster = require('../index.js')
 
+var MyTestCluster = require('./lib/test-cluster.js')
+
 var promiseRequest = util.promisify(request)
-
-function MyTestCluster (opts) {
-    if (!(this instanceof MyTestCluster)) {
-        return new MyTestCluster(opts)
-    }
-
-    var self = this
-
-    self.port = opts.port || 0
-    self.server = http.createServer()
-
-    self.server.on('request', onRequest)
-
-    function onRequest (req, res) {
-        res.end(req.url)
-    }
-}
-
-MyTestCluster.prototype.bootstrap = function bootstrap (cb) {
-    var self = this
-
-    self.server.once('listening', function onListen () {
-        self.port = self.server.address().port
-        cb()
-    })
-    self.server.listen(self.port)
-}
-
-MyTestCluster.prototype.close = function close (cb) {
-    var self = this
-
-    self.server.close(cb)
-}
-
-MyTestCluster.test = tapeCluster(tape, MyTestCluster)
-MyTestCluster.tapTest = tapeCluster(tap.test, MyTestCluster)
 
 MyTestCluster.test('a test', {
     port: 8000
-}, function t (cluster, assert) {
-    request({
-        url: 'http://localhost:' + cluster.port + '/foo'
-    }, function onResponse (err, resp, body) {
-        assert.ifError(err)
-
-        assert.equal(resp.statusCode, 200)
-        assert.equal(resp.body, '/foo')
-
-        assert.end()
-    })
-})
-
-MyTestCluster.tapTest('a tap test', {
-    port: 0
 }, function t (cluster, assert) {
     request({
         url: 'http://localhost:' + cluster.port + '/foo'
@@ -111,31 +61,6 @@ MyTestCluster.test('async await no end',
     })
 
 MyTestCluster.test('using t.plan', function t (cluster, assert) {
-    var shouldFail = false
-    // jscs:disable disallowKeywords
-    try {
-        assert.plan(3)
-    } catch (err) {
-        shouldFail = true
-        assert.equal(err.message,
-            'tape-cluster: t.plan() is not supported')
-    }
-    // jscs:enable disallowKeywords
-    assert.ok(shouldFail)
-
-    request({
-        url: 'http://localhost:' + cluster.port + '/foo'
-    }, function onResponse (err, resp, body) {
-        assert.ifError(err)
-
-        assert.equal(resp.statusCode, 200)
-        assert.equal(resp.body, '/foo')
-
-        assert.end()
-    })
-})
-
-MyTestCluster.tapTest('using tap t.plan', function t (cluster, assert) {
     var shouldFail = false
     // jscs:disable disallowKeywords
     try {
@@ -354,21 +279,21 @@ tape('handles thrown exception', function t (assert) {
     }
 
     var myTest = tapeCluster(function testFn (name, fn) {
-        var hasError = false
         assert.equal(name, 'a name')
         fn({
             end: function end () {
-                assert.ok(hasError)
-
-                assert.end()
+                assert.ok(false, 'should never be called')
             },
-            ifError: function ifError (err) {
-                hasError = true
-                assert.ok(err)
-                assert.equal(err.message, 'it failed')
+            ifError: function ifError () {
+                assert.ok(false, 'should never be called')
             }
         })
     }, TestClass)
+
+    process.once('uncaughtException', (err) => {
+        assert.equal(err.message, 'it failed')
+        assert.end()
+    })
 
     myTest('a name', async function _ (cluster, assertLike) {
         throw new Error('it failed')
@@ -386,8 +311,8 @@ tape('handles thrown exception but also double end',
             cb()
         }
 
+        var onlyOnce = false
         var myTest = tapeCluster(function testFn (name, fn) {
-            var onlyOnce = false
             assert.equal(name, 'a name')
             fn({
                 end: function end () {
@@ -396,15 +321,17 @@ tape('handles thrown exception but also double end',
                     }
                     onlyOnce = true
                 },
-                ifError: function ifError (err) {
-                    assert.ok(err)
-                    assert.equal(err.message, 'it failed')
-
-                    assert.ok(onlyOnce)
-                    assert.end()
+                ifError: function ifError () {
+                    assert.ok(false, 'should not be called')
                 }
             })
         }, TestClass)
+
+        process.once('uncaughtException', (err) => {
+            assert.equal(err.message, 'it failed')
+            assert.equal(onlyOnce, true)
+            assert.end()
+        })
 
         myTest('a name', async function _ (cluster, assertLike) {
             assertLike.end()
