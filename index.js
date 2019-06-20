@@ -72,13 +72,13 @@ function wrapCluster (tape, Cluster) {
                                 assert.end()
                             }
                         }, function fail (promiseError) {
-                            assert.ifError(promiseError)
-                            // user may have already called end()
-                            if (!onlyOnce) {
-                                assert.end()
-                            }
+                            process.nextTick(rethrow, promiseError)
                         })
                     }
+                }
+
+                function rethrow (promiseError) {
+                    throw promiseError
                 }
 
                 function asyncEnd (err) {
