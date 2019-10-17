@@ -18,10 +18,9 @@
   ],
   "dependencies": {},
   "devDependencies": {
-    "coveralls": "^2.10.0",
     "nyc": "^14.1.1",
     "opn": "^1.0.1",
-    "request": "2.55.0",
+    "request": "2.88.0",
     "standardx": "^3.0.1",
     "tap": "^12.6.0",
     "tap-spec": "^2.1.1",
@@ -48,7 +47,7 @@
     "cover": "nyc --report html --print detail -- tap test/*.js && npm run check-cover -s",
     "check-cover": "nyc check-coverage --branches=100 --lines=100 --functions=100",
     "view-cover": "opn ./coverage/index.html",
-    "travis": "npm run cover -s && nyc report lcov && ((cat coverage/lcov.info | coveralls) || exit 0)"
+    "travis": "npm run cover -s && nyc report lcov"
   },
   "engine": {
     "node": ">= 0.8.x"
