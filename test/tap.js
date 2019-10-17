@@ -2,13 +2,13 @@
 
 var request = require('request')
 
-var MyTestCluster = require('./lib/test-cluster.js')
+var MyTestHarness = require('./lib/test-harness.js')
 
-MyTestCluster.tapTest('a tap test', {
+MyTestHarness.tapTest('a tap test', {
     port: 0
-}, function t (cluster, assert) {
+}, function t (harness, assert) {
     request({
-        url: 'http://localhost:' + cluster.port + '/foo'
+        url: 'http://localhost:' + harness.port + '/foo'
     }, function onResponse (err, resp, body) {
         assert.ifError(err)
 
@@ -19,7 +19,7 @@ MyTestCluster.tapTest('a tap test', {
     })
 })
 
-MyTestCluster.tapTest('using tap t.plan', function t (cluster, assert) {
+MyTestHarness.tapTest('using tap t.plan', function t (harness, assert) {
     var shouldFail = false
     // jscs:disable disallowKeywords
     try {
@@ -27,13 +27,13 @@ MyTestCluster.tapTest('using tap t.plan', function t (cluster, assert) {
     } catch (err) {
         shouldFail = true
         assert.equal(err.message,
-            'tape-cluster: t.plan() is not supported')
+            'tape-harness: t.plan() is not supported')
     }
     // jscs:enable disallowKeywords
     assert.ok(shouldFail)
 
     request({
-        url: 'http://localhost:' + cluster.port + '/foo'
+        url: 'http://localhost:' + harness.port + '/foo'
     }, function onResponse (err, resp, body) {
         assert.ifError(err)
 

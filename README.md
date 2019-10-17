@@ -1,4 +1,4 @@
-# tape-cluster
+# tape-harness
 
 <!--
     [![build status][build-png]][build]
@@ -13,15 +13,19 @@ A helper to run integration tests against an application
 ## Motivation
 
 When writing integration tests against a service you generally
-want to spawn up an instance of the application or spawn up
-a cluster of applications.
+want to spawn up an instance of the application.
 
-Writing tests against such a cluster can be tedious without
-a helper to setup your cluster before and after every test.
+Writing tests against an application can be tedious without
+a helper to do common setup & teardown before & after every test.
 
-The `tape-cluster` package will setup your test harness / runner / application before each test block and spin them down after each test block.
+The `tape-harness` package will setup your test
+harness / runner / application before each test block and
+spin them down after each test block.
 
-This functionality is similar to `beforeEach` or `afterEach` that might exist in other testing libraries but is instead implemented as a standalone library that's compatible with vanilla `tape` and `tap`
+This functionality is similar to `beforeEach` or `afterEach`
+that might exist in other testing libraries but is instead
+implemented as a standalone library that's
+compatible with vanilla `tape` and `tap`
 
 ## Example
 
@@ -34,13 +38,13 @@ Your test file
 var tape = require('tape');
 var request = require('request');
 
-var MyTestCluster = require('./lib/test-cluster.js');
+var MyTestHarness = require('./lib/test-harness.js');
 
-MyTestCluster.test('a test', {
+MyTestHarness.test('a test', {
     port: 8000
-}, function t(cluster, assert) {
+}, function t(harness, assert) {
     request({
-        url: 'http://localhost:' + cluster.port + '/foo'
+        url: 'http://localhost:' + harness.port + '/foo'
     }, function onResponse(err, resp, body) {
         assert.ifError(err);
 
@@ -51,21 +55,21 @@ MyTestCluster.test('a test', {
     });
 });
 
-tape('a test without tape-cluster', function t(assert) {
-    var cluster = new MyTestCluster({
+tape('a test without tape-harness', function t(assert) {
+    var harness = new MyTestHarness({
         port: 8000
     });
-    cluster.bootstrap(function (err) {
+    harness.bootstrap(function (err) {
         assert.ifError(err);
         request({
-            url: 'http://localhost:' + cluster.port + '/foo'
+            url: 'http://localhost:' + harness.port + '/foo'
         }, function onResponse(err, resp, body) {
             assert.ifError(err);
 
             assert.equal(resp.statusCode, 200);
             assert.equal(resp.body, '/foo');
 
-            cluster.close(function (err) {
+            harness.close(function (err) {
                 assert.ifError(err);
                 assert.end();
             });
@@ -74,23 +78,23 @@ tape('a test without tape-cluster', function t(assert) {
 });
 ```
 
-Your actual `test-cluster.js`
+Your actual `test-harness.js`
 
 ```js
-// test-cluster.js
+// test-harness.js
 'use strict';
 
 var tape = require('tape');
 var http = require('http');
-var tapeCluster = require('tape-cluster');
+var tapeHarness = require('tape-harness');
 
-MyTestCluster.test = tapeCluster(tape, MyTestCluster);
+MyTestHarness.test = tapeHarness(tape, MyTestHarness);
 
-module.exports = MyTestCluster;
+module.exports = MyTestHarness;
 
-function MyTestCluster(opts) {
-    if (!(this instanceof MyTestCluster)) {
-        return new MyTestCluster(opts);
+function MyTestHarness(opts) {
+    if (!(this instanceof MyTestHarness)) {
+        return new MyTestHarness(opts);
     }
 
     var self = this;
@@ -106,14 +110,14 @@ function MyTestCluster(opts) {
     }
 }
 
-MyTestCluster.prototype.bootstrap = function bootstrap(cb) {
+MyTestHarness.prototype.bootstrap = function bootstrap(cb) {
     var self = this;
 
     self.server.once('listening', cb);
     self.server.listen(self.port);
 };
 
-MyTestCluster.prototype.close = function close(cb) {
+MyTestHarness.prototype.close = function close(cb) {
     var self = this;
 
     self.server.close(cb);
@@ -125,12 +129,12 @@ MyTestCluster.prototype.close = function close(cb) {
 ```js
 const fetch = require('node-fetch')
 
-const MyTestCluster = require('./lib/test-cluster.js');
+const MyTestHarness = require('./lib/test-harness.js');
 
-MyTestCluster.test('a test', {
+MyTestHarness.test('a test', {
     port: 8000
-}, async function t(cluster, assert) {
-    const res = await fetch(`http://localhost:${cluster.port}/foo`)
+}, async function t(harness, assert) {
+    const res = await fetch(`http://localhost:${harness.port}/foo`)
 
     const text = await res.text()
     assert.equal(res.status, 200)
@@ -141,9 +145,9 @@ MyTestCluster.test('a test', {
 ```js
 const tape = require('tape');
 const http = require('http');
-const tapeCluster = require('tape-cluster');
+const tapeHarness = require('tape-harness');
 
-class TestCluster {
+class TestHarness {
     constructor(opts) {
         this.port = opts.port
         this.server = http.createServer()
@@ -170,12 +174,12 @@ class TestCluster {
     }
 }
 
-TestCluster.test = tapeCluster(tape, TestCluster)
+TestHarness.test = tapeHarness(tape, TestHarness)
 ```
 
 ## Installation
 
-`npm install tape-cluster`
+`npm install tape-harness`
 
 ## Tests
 
@@ -187,11 +191,11 @@ TestCluster.test = tapeCluster(tape, TestCluster)
 
 ## MIT Licensed
 
-  [build-png]: https://secure.travis-ci.org/Raynos/tape-cluster.png
-  [build]: https://travis-ci.org/Raynos/tape-cluster
-  [cover-png]: https://coveralls.io/repos/Raynos/tape-cluster/badge.png
-  [cover]: https://coveralls.io/r/Raynos/tape-cluster
-  [dep-png]: https://david-dm.org/Raynos/tape-cluster.png
-  [dep]: https://david-dm.org/Raynos/tape-cluster
-  [npm-png]: https://nodei.co/npm/tape-cluster.png?stars&downloads
-  [npm]: https://nodei.co/npm/tape-cluster
+  [build-png]: https://secure.travis-ci.org/Raynos/tape-harness.png
+  [build]: https://travis-ci.org/Raynos/tape-harness
+  [cover-png]: https://coveralls.io/repos/Raynos/tape-harness/badge.png
+  [cover]: https://coveralls.io/r/Raynos/tape-harness
+  [dep-png]: https://david-dm.org/Raynos/tape-harness.png
+  [dep]: https://david-dm.org/Raynos/tape-harness
+  [npm-png]: https://nodei.co/npm/tape-harness.png?stars&downloads
+  [npm]: https://nodei.co/npm/tape-harness

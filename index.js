@@ -1,8 +1,8 @@
 'use strict'
 
-module.exports = wrapCluster
+module.exports = wrapHarness
 
-function wrapCluster (tape, Cluster) {
+function wrapHarness (tape, Harness) {
     var test = buildTester(tape)
 
     test.only = buildTester(tape.only)
@@ -34,13 +34,13 @@ function wrapCluster (tape, Cluster) {
                 assert.plan = planFail
 
                 options.assert = assert
-                var cluster = new Cluster(options)
-                var ret = cluster.bootstrap(onCluster)
+                var harness = new Harness(options)
+                var ret = harness.bootstrap(onHarness)
                 if (ret && ret.then) {
                     ret.then(function success () {
-                        process.nextTick(onCluster)
+                        process.nextTick(onHarness)
                     }, function fail (promiseError) {
-                        process.nextTick(onCluster, promiseError)
+                        process.nextTick(onHarness, promiseError)
                     })
                 }
 
@@ -56,15 +56,15 @@ function wrapCluster (tape, Cluster) {
                         return _plan.apply(assert, arguments)
                     }
 
-                    throw new Error('tape-cluster: t.plan() is not supported')
+                    throw new Error('tape-harness: t.plan() is not supported')
                 }
 
-                function onCluster (err) {
+                function onHarness (err) {
                     if (err) {
                         return assert.end(err)
                     }
 
-                    var ret = fn(cluster, assert)
+                    var ret = fn(harness, assert)
                     if (ret && ret.then) {
                         ret.then(function success () {
                             // user may have already called end()
@@ -91,7 +91,7 @@ function wrapCluster (tape, Cluster) {
                         assert.ifError(err)
                     }
 
-                    var ret = cluster.close(onEnd)
+                    var ret = harness.close(onEnd)
                     if (ret && ret.then) {
                         ret.then(function success () {
                             process.nextTick(onEnd)

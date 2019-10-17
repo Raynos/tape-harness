@@ -4,11 +4,11 @@ var tape = require('tape')
 var tap = require('tap')
 var http = require('http')
 
-var tapeCluster = require('../../index.js')
+var tapeHarness = require('../../index.js')
 
-function MyTestCluster (opts) {
-    if (!(this instanceof MyTestCluster)) {
-        return new MyTestCluster(opts)
+function MyTestHarness (opts) {
+    if (!(this instanceof MyTestHarness)) {
+        return new MyTestHarness(opts)
     }
 
     var self = this
@@ -23,7 +23,7 @@ function MyTestCluster (opts) {
     }
 }
 
-MyTestCluster.prototype.bootstrap = function bootstrap (cb) {
+MyTestHarness.prototype.bootstrap = function bootstrap (cb) {
     var self = this
 
     self.server.once('listening', function onListen () {
@@ -33,13 +33,13 @@ MyTestCluster.prototype.bootstrap = function bootstrap (cb) {
     self.server.listen(self.port)
 }
 
-MyTestCluster.prototype.close = function close (cb) {
+MyTestHarness.prototype.close = function close (cb) {
     var self = this
 
     self.server.close(cb)
 }
 
-MyTestCluster.test = tapeCluster(tape, MyTestCluster)
-MyTestCluster.tapTest = tapeCluster(tap.test, MyTestCluster)
+MyTestHarness.test = tapeHarness(tape, MyTestHarness)
+MyTestHarness.tapTest = tapeHarness(tap.test, MyTestHarness)
 
-module.exports = MyTestCluster
+module.exports = MyTestHarness

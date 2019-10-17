@@ -5,17 +5,17 @@ var http = require('http')
 var util = require('util')
 var request = require('request')
 
-var tapeCluster = require('../index.js')
+var tapeHarness = require('../index.js')
 
-var MyTestCluster = require('./lib/test-cluster.js')
+var MyTestHarness = require('./lib/test-harness.js')
 
 var promiseRequest = util.promisify(request)
 
-MyTestCluster.test('a test', {
+MyTestHarness.test('a test', {
     port: 8000
-}, function t (cluster, assert) {
+}, function t (harness, assert) {
     request({
-        url: 'http://localhost:' + cluster.port + '/foo'
+        url: 'http://localhost:' + harness.port + '/foo'
     }, function onResponse (err, resp, body) {
         assert.ifError(err)
 
@@ -26,9 +26,9 @@ MyTestCluster.test('a test', {
     })
 })
 
-MyTestCluster.test('no options', function t (cluster, assert) {
+MyTestHarness.test('no options', function t (harness, assert) {
     request({
-        url: 'http://localhost:' + cluster.port + '/foo'
+        url: 'http://localhost:' + harness.port + '/foo'
     }, function onResponse (err, resp, body) {
         assert.ifError(err)
 
@@ -39,9 +39,9 @@ MyTestCluster.test('no options', function t (cluster, assert) {
     })
 })
 
-MyTestCluster.test('async await', async function t (cluster, assert) {
+MyTestHarness.test('async await', async function t (harness, assert) {
     var resp = await promiseRequest({
-        url: 'http://localhost:' + cluster.port + '/foo'
+        url: 'http://localhost:' + harness.port + '/foo'
     })
 
     assert.equal(resp.statusCode, 200)
@@ -50,17 +50,17 @@ MyTestCluster.test('async await', async function t (cluster, assert) {
     assert.end()
 })
 
-MyTestCluster.test('async await no end',
-    async function t (cluster, assert) {
+MyTestHarness.test('async await no end',
+    async function t (harness, assert) {
         var resp = await promiseRequest({
-            url: 'http://localhost:' + cluster.port + '/foo'
+            url: 'http://localhost:' + harness.port + '/foo'
         })
 
         assert.equal(resp.statusCode, 200)
         assert.equal(resp.body, '/foo')
     })
 
-MyTestCluster.test('using t.plan', function t (cluster, assert) {
+MyTestHarness.test('using t.plan', function t (harness, assert) {
     var shouldFail = false
     // jscs:disable disallowKeywords
     try {
@@ -68,13 +68,13 @@ MyTestCluster.test('using t.plan', function t (cluster, assert) {
     } catch (err) {
         shouldFail = true
         assert.equal(err.message,
-            'tape-cluster: t.plan() is not supported')
+            'tape-harness: t.plan() is not supported')
     }
     // jscs:enable disallowKeywords
     assert.ok(shouldFail)
 
     request({
-        url: 'http://localhost:' + cluster.port + '/foo'
+        url: 'http://localhost:' + harness.port + '/foo'
     }, function onResponse (err, resp, body) {
         assert.ifError(err)
 
@@ -85,11 +85,11 @@ MyTestCluster.test('using t.plan', function t (cluster, assert) {
     })
 })
 
-MyTestCluster.test('no function name')
+MyTestHarness.test('no function name')
 
-function MyPromiseTestCluster (opts) {
-    if (!(this instanceof MyPromiseTestCluster)) {
-        return new MyPromiseTestCluster(opts)
+function MyPromiseTestHarness (opts) {
+    if (!(this instanceof MyPromiseTestHarness)) {
+        return new MyPromiseTestHarness(opts)
     }
 
     var self = this
@@ -104,7 +104,7 @@ function MyPromiseTestCluster (opts) {
     }
 }
 
-MyPromiseTestCluster.prototype.bootstrap = async function bootstrap () {
+MyPromiseTestHarness.prototype.bootstrap = async function bootstrap () {
     return new Promise((resolve) => {
         this.server.once('listening', () => {
             this.port = this.server.address().port
@@ -114,7 +114,7 @@ MyPromiseTestCluster.prototype.bootstrap = async function bootstrap () {
     })
 }
 
-MyPromiseTestCluster.prototype.close = async function close () {
+MyPromiseTestHarness.prototype.close = async function close () {
     return new Promise((resolve, reject) => {
         this.server.close((err) => {
             if (err) return reject(err)
@@ -123,11 +123,11 @@ MyPromiseTestCluster.prototype.close = async function close () {
     })
 }
 
-MyPromiseTestCluster.test = tapeCluster(tape, MyPromiseTestCluster)
+MyPromiseTestHarness.test = tapeHarness(tape, MyPromiseTestHarness)
 
-MyPromiseTestCluster.test('async await promise', async function t (cluster, assert) {
+MyPromiseTestHarness.test('async await promise', async function t (harness, assert) {
     var resp = await promiseRequest({
-        url: 'http://localhost:' + cluster.port + '/foo'
+        url: 'http://localhost:' + harness.port + '/foo'
     })
 
     assert.equal(resp.statusCode, 200)
@@ -146,7 +146,7 @@ tape('handles bootstrap error', function t (assert) {
         cb()
     }
 
-    var myTest = tapeCluster(function testFn (name, fn) {
+    var myTest = tapeHarness(function testFn (name, fn) {
         var hasError = false
         assert.equal(name, 'a name')
         fn({
@@ -179,7 +179,7 @@ tape('handles async bootstrap error', function t (assert) {
         cb()
     }
 
-    var myTest = tapeCluster(function testFn (name, fn) {
+    var myTest = tapeHarness(function testFn (name, fn) {
         var hasError = false
         assert.equal(name, 'a name')
         fn({
@@ -212,7 +212,7 @@ tape('handles close error', function t (assert) {
         cb(new Error('it failed'))
     }
 
-    var myTest = tapeCluster(function testFn (name, fn) {
+    var myTest = tapeHarness(function testFn (name, fn) {
         var hasError = false
         assert.equal(name, 'a name')
         fn({
@@ -229,8 +229,8 @@ tape('handles close error', function t (assert) {
         })
     }, TestClass)
 
-    myTest('a name', function _ (cluster, assertLike) {
-        assert.ok(cluster)
+    myTest('a name', function _ (harness, assertLike) {
+        assert.ok(harness)
         assertLike.end()
     })
 })
@@ -245,7 +245,7 @@ tape('handles async close error', function t (assert) {
         throw new Error('it failed')
     }
 
-    var myTest = tapeCluster(function testFn (name, fn) {
+    var myTest = tapeHarness(function testFn (name, fn) {
         var hasError = false
         assert.equal(name, 'a name')
         fn({
@@ -262,8 +262,8 @@ tape('handles async close error', function t (assert) {
         })
     }, TestClass)
 
-    myTest('a name', function _ (cluster, assertLike) {
-        assert.ok(cluster)
+    myTest('a name', function _ (harness, assertLike) {
+        assert.ok(harness)
         assertLike.end()
     })
 })
@@ -278,7 +278,7 @@ tape('handles thrown exception', function t (assert) {
         cb()
     }
 
-    var myTest = tapeCluster(function testFn (name, fn) {
+    var myTest = tapeHarness(function testFn (name, fn) {
         assert.equal(name, 'a name')
         fn({
             end: function end () {
@@ -295,7 +295,7 @@ tape('handles thrown exception', function t (assert) {
         assert.end()
     })
 
-    myTest('a name', async function _ (cluster, assertLike) {
+    myTest('a name', async function _ (harness, assertLike) {
         throw new Error('it failed')
     })
 })
@@ -312,7 +312,7 @@ tape('handles thrown exception but also double end',
         }
 
         var onlyOnce = false
-        var myTest = tapeCluster(function testFn (name, fn) {
+        var myTest = tapeHarness(function testFn (name, fn) {
             assert.equal(name, 'a name')
             fn({
                 end: function end () {
@@ -333,7 +333,7 @@ tape('handles thrown exception but also double end',
             assert.end()
         })
 
-        myTest('a name', async function _ (cluster, assertLike) {
+        myTest('a name', async function _ (harness, assertLike) {
             assertLike.end()
             throw new Error('it failed')
         })
