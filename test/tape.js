@@ -1,12 +1,12 @@
 'use strict'
 
 var tape = require('tape')
-var http = require('http')
 var util = require('util')
 var request = require('request')
 
 var tapeHarness = require('../index.js')
 
+var AsyncHarness = require('./lib/async-harness.js')
 var MyTestHarness = require('./lib/test-harness.js')
 
 var promiseRequest = util.promisify(request)
@@ -87,54 +87,31 @@ MyTestHarness.test('using t.plan', function t (harness, assert) {
 
 MyTestHarness.test('no function name')
 
-function MyPromiseTestHarness (opts) {
-  if (!(this instanceof MyPromiseTestHarness)) {
-    return new MyPromiseTestHarness(opts)
-  }
-
-  var self = this
-
-  self.port = opts.port || 0
-  self.server = http.createServer()
-
-  self.server.on('request', onRequest)
-
-  function onRequest (req, res) {
-    res.end(req.url)
-  }
-}
-
-MyPromiseTestHarness.prototype.bootstrap = async function bootstrap () {
-  return new Promise((resolve) => {
-    this.server.once('listening', () => {
-      this.port = this.server.address().port
-      resolve()
+AsyncHarness.test(
+  'async await promise',
+  async function t (harness, assert) {
+    var resp = await promiseRequest({
+      url: 'http://localhost:' + harness.port + '/foo'
     })
-    this.server.listen(this.port)
-  })
-}
 
-MyPromiseTestHarness.prototype.close = async function close () {
-  return new Promise((resolve, reject) => {
-    this.server.close((err) => {
-      if (err) return reject(err)
-      resolve()
+    assert.equal(resp.statusCode, 200)
+    assert.equal(resp.body, '/foo')
+
+    assert.end()
+  }
+)
+
+AsyncHarness.test(
+  'async await promise without end',
+  async function t (harness, assert) {
+    var resp = await promiseRequest({
+      url: 'http://localhost:' + harness.port + '/foo'
     })
-  })
-}
 
-MyPromiseTestHarness.test = tapeHarness(tape, MyPromiseTestHarness)
-
-MyPromiseTestHarness.test('async await promise', async function t (harness, assert) {
-  var resp = await promiseRequest({
-    url: 'http://localhost:' + harness.port + '/foo'
-  })
-
-  assert.equal(resp.statusCode, 200)
-  assert.equal(resp.body, '/foo')
-
-  assert.end()
-})
+    assert.equal(resp.statusCode, 200)
+    assert.equal(resp.body, '/foo')
+  }
+)
 
 tape('handles bootstrap error', function t (assert) {
   function TestClass () {}
