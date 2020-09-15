@@ -30,7 +30,7 @@
     }
   ],
   "scripts": {
-    "test": "npr standard && node test/index.js"
+    "test": "npr standard && node test/tap.js && node test/tape.js"
   },
   "ngen-version": "5.1.0",
   "binDependencies": {
