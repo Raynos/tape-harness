@@ -18,21 +18,10 @@
   ],
   "dependencies": {},
   "devDependencies": {
-    "nyc": "^14.1.1",
-    "opn": "^1.0.1",
+    "npm-bin-deps": "1.10.1",
     "request": "2.88.0",
-    "standardx": "^3.0.1",
     "tap": "14.7.1",
-    "tap-spec": "^2.1.1",
     "tape": "^3.4.0"
-  },
-  "eslintConfig": {
-    "rules": {
-      "indent": [
-        "error",
-        4
-      ]
-    }
   },
   "licenses": [
     {
@@ -41,20 +30,10 @@
     }
   ],
   "scripts": {
-    "test": "npm run jshint -s && npm run cover -s",
-    "unit-test": "node test/index.js | tap-spec",
-    "jshint": "standardx",
-    "cover": "nyc --report html --print detail -- tap test/*.js && npm run check-cover -s",
-    "check-cover": "nyc check-coverage --branches=100 --lines=100 --functions=100",
-    "view-cover": "opn ./coverage/index.html",
-    "travis": "npm run cover -s && nyc report lcov"
+    "test": "npr standard && node test/index.js"
   },
-  "engine": {
-    "node": ">= 0.8.x"
-  },
-  "pre-commit": [
-    "test"
-  ],
-  "pre-commit.silent": true,
-  "ngen-version": "5.1.0"
+  "ngen-version": "5.1.0",
+  "binDependencies": {
+    "standard": "14.3.4"
+  }
 }
