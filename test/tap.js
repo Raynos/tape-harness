@@ -9,7 +9,7 @@ MyTestHarness.tapTest('a tap test', {
 }, function t (harness, assert) {
   request({
     url: 'http://localhost:' + harness.port + '/foo'
-  }, function onResponse (err, resp, body) {
+  }, function onResponse (err, resp) {
     assert.ifError(err)
 
     assert.equal(resp.statusCode, 200)
@@ -34,7 +34,7 @@ MyTestHarness.tapTest('using tap t.plan', function t (harness, assert) {
 
   request({
     url: 'http://localhost:' + harness.port + '/foo'
-  }, function onResponse (err, resp, body) {
+  }, function onResponse (err, resp) {
     assert.ifError(err)
 
     assert.equal(resp.statusCode, 200)

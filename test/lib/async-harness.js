@@ -2,11 +2,14 @@
 
 const http = require('http')
 const util = require('util')
-const tape = require('tape')
+const tape = require('@pre-bundled/tape')
 
 const tapeHarness = require('../../index.js')
 
 class AsyncHarness {
+  /**
+   * @param {{ port?: number }} opts
+   */
   constructor (opts) {
     this.port = opts.port || 0
     this.server = http.createServer()
@@ -19,15 +22,20 @@ class AsyncHarness {
   async bootstrap () {
     await util.promisify((cb) => {
       this.server.listen(this.port, () => {
-        this.port = this.server.address().port
-        cb()
+        const addr = this.server.address()
+        if (addr && typeof addr === 'object') {
+          this.port = addr.port
+        }
+        cb(null, null)
       })
     })()
   }
 
   async close () {
     await util.promisify((cb) => {
-      this.server.close(cb)
+      this.server.close(() => {
+        cb(null, null)
+      })
     })()
   }
 }

@@ -1,22 +1,28 @@
 'use strict'
 
-var tape = require('tape')
-var util = require('util')
-var request = require('request')
+/**
+ * @typedef {import('@pre-bundled/tape').Test} Test
+ * @typedef {import('@pre-bundled/tape')} tape
+ * @typedef {import('@pre-bundled/tape').TestCase} TestCase
+ */
 
-var tapeHarness = require('../index.js')
+const tape = require('@pre-bundled/tape')
+const util = require('util')
+const request = require('request')
 
-var AsyncHarness = require('./lib/async-harness.js')
-var MyTestHarness = require('./lib/test-harness.js')
+const tapeHarness = require('../index.js')
 
-var promiseRequest = util.promisify(request)
+const AsyncHarness = require('./lib/async-harness.js')
+const MyTestHarness = require('./lib/test-harness.js')
+
+const promiseRequest = util.promisify(request)
 
 MyTestHarness.test('a test', {
   port: 8301
 }, function t (harness, assert) {
   request({
     url: 'http://localhost:' + harness.port + '/foo'
-  }, function onResponse (err, resp, body) {
+  }, function onResponse (err, resp) {
     assert.ifError(err)
 
     assert.equal(resp.statusCode, 200)
@@ -29,7 +35,7 @@ MyTestHarness.test('a test', {
 MyTestHarness.test('no options', function t (harness, assert) {
   request({
     url: 'http://localhost:' + harness.port + '/foo'
-  }, function onResponse (err, resp, body) {
+  }, function onResponse (err, resp) {
     assert.ifError(err)
 
     assert.equal(resp.statusCode, 200)
@@ -40,7 +46,7 @@ MyTestHarness.test('no options', function t (harness, assert) {
 })
 
 MyTestHarness.test('async await', async function t (harness, assert) {
-  var resp = await promiseRequest({
+  const resp = await promiseRequest({
     url: 'http://localhost:' + harness.port + '/foo'
   })
 
@@ -75,7 +81,7 @@ MyTestHarness.test('using t.plan', function t (harness, assert) {
 
   request({
     url: 'http://localhost:' + harness.port + '/foo'
-  }, function onResponse (err, resp, body) {
+  }, function onResponse (err, resp) {
     assert.ifError(err)
 
     assert.equal(resp.statusCode, 200)
@@ -114,16 +120,33 @@ AsyncHarness.test(
 )
 
 tape('handles bootstrap error', function t (assert) {
-  function TestClass () {}
+  class TestClass {
+    /** @param {(e?: Error) => void} cb */
+    bootstrap (cb) {
+      cb(new Error('it failed'))
+    }
 
-  TestClass.prototype.bootstrap = function b (cb) {
-    cb(new Error('it failed'))
-  }
-  TestClass.prototype.close = function c (cb) {
-    cb()
+    /** @param {(e?: Error) => void} cb */
+    close (cb) {
+      cb()
+    }
   }
 
-  var myTest = tapeHarness(function testFn (name, fn) {
+  const myTest = tapeHarness(
+    /** @type {tape} */ (/** @type {unknown} */ (tapeLike)),
+    TestClass
+  )
+
+  myTest('a name', (_, assertLike) => {
+    assert.fail('should not reach here')
+    assertLike.end()
+  })
+
+  /**
+   * @param {string} name
+   * @param {Function} fn
+   */
+  function tapeLike (name, fn) {
     var hasError = false
     assert.equal(name, 'a name')
     fn({
@@ -132,64 +155,87 @@ tape('handles bootstrap error', function t (assert) {
 
         assert.end()
       },
-      ifError: function ifError (err) {
+      ifError: (/** @type {Error} */ err) => {
         hasError = true
         assert.ok(err)
         assert.equal(err.message, 'it failed')
       }
     })
-  }, TestClass)
-
-  myTest('a name', function _ (assertLike) {
-    assert.fail('should not reach here')
-    assertLike.end()
-  })
+  }
 })
 
 tape('handles async bootstrap error', function t (assert) {
-  function TestClass () {}
+  class TestClass {
+    async bootstrap () {
+      throw new Error('it failed')
+    }
 
-  TestClass.prototype.bootstrap = async function b (cb) {
-    throw new Error('it failed')
+    /** @param {(e?: Error) => void} cb */
+    close (cb) {
+      cb()
+    }
   }
-  TestClass.prototype.close = function c (cb) {
-    cb()
-  }
 
-  var myTest = tapeHarness(function testFn (name, fn) {
-    var hasError = false
-    assert.equal(name, 'a name')
-    fn({
-      end: function end () {
-        assert.ok(hasError)
+  const myTest = tapeHarness(
+    /** @type {tape} */ (/** @type {unknown} */ (tapeLike)),
+    TestClass
+  )
 
-        assert.end()
-      },
-      ifError: function ifError (err) {
-        hasError = true
-        assert.ok(err)
-        assert.equal(err.message, 'it failed')
-      }
-    })
-  }, TestClass)
-
-  myTest('a name', function _ (assertLike) {
+  myTest('a name', (_, assertLike) => {
     assert.fail('should not reach here')
     assertLike.end()
   })
+
+  /**
+   * @param {string} name
+   * @param {Function} fn
+   */
+  function tapeLike (name, fn) {
+    var hasError = false
+    assert.equal(name, 'a name')
+    fn({
+      end: function end () {
+        assert.ok(hasError)
+
+        assert.end()
+      },
+      ifError: (/** @type {Error} */ err) => {
+        hasError = true
+        assert.ok(err)
+        assert.equal(err.message, 'it failed')
+      }
+    })
+  }
 })
 
 tape('handles close error', function t (assert) {
-  function TestClass () {}
+  class TestClass {
+    /** @param {(e?: Error) => void} cb */
+    bootstrap (cb) {
+      cb()
+    }
 
-  TestClass.prototype.bootstrap = function b (cb) {
-    cb()
-  }
-  TestClass.prototype.close = function c (cb) {
-    cb(new Error('it failed'))
+    /** @param {(e?: Error) => void} cb */
+    close (cb) {
+      cb(new Error('it failed'))
+    }
   }
 
-  var myTest = tapeHarness(function testFn (name, fn) {
+  const myTest = tapeHarness(
+    /** @type {tape} */ (/** @type {unknown} */ (tapeLike)),
+    TestClass
+  )
+
+  myTest('a name', function _ (harness, assertLike) {
+    assert.ok(harness)
+    assertLike.end()
+  })
+
+  /**
+   * @param {string} name
+   * @param {Function} fn
+   */
+  function tapeLike (name, fn) {
     var hasError = false
     assert.equal(name, 'a name')
     fn({
@@ -198,31 +244,42 @@ tape('handles close error', function t (assert) {
 
         assert.end()
       },
-      ifError: function ifError (err) {
+      ifError: (/** @type {Error} */ err) => {
         hasError = true
         assert.ok(err)
         assert.equal(err.message, 'it failed')
       }
     })
-  }, TestClass)
-
-  myTest('a name', function _ (harness, assertLike) {
-    assert.ok(harness)
-    assertLike.end()
-  })
+  }
 })
 
 tape('handles async close error', function t (assert) {
-  function TestClass () {}
+  class TestClass {
+    /** @param {(e?: Error) => void} cb */
+    bootstrap (cb) {
+      cb()
+    }
 
-  TestClass.prototype.bootstrap = function b (cb) {
-    cb()
-  }
-  TestClass.prototype.close = async function c (cb) {
-    throw new Error('it failed')
+    async close () {
+      throw new Error('it failed')
+    }
   }
 
-  var myTest = tapeHarness(function testFn (name, fn) {
+  const myTest = tapeHarness(
+    /** @type {tape} */ (/** @type {unknown} */ (tapeLike)),
+    TestClass
+  )
+
+  myTest('a name', function _ (harness, assertLike) {
+    assert.ok(harness)
+    assertLike.end()
+  })
+
+  /**
+   * @param {string} name
+   * @param {Function} fn
+   */
+  function tapeLike (name, fn) {
     var hasError = false
     assert.equal(name, 'a name')
     fn({
@@ -231,31 +288,40 @@ tape('handles async close error', function t (assert) {
 
         assert.end()
       },
-      ifError: function ifError (err) {
+      ifError: (/** @type {Error} */ err) => {
         hasError = true
         assert.ok(err)
         assert.equal(err.message, 'it failed')
       }
     })
-  }, TestClass)
-
-  myTest('a name', function _ (harness, assertLike) {
-    assert.ok(harness)
-    assertLike.end()
-  })
+  }
 })
 
 tape('handles thrown exception', function t (assert) {
-  function TestClass () {}
-
-  TestClass.prototype.bootstrap = function b (cb) {
-    cb()
-  }
-  TestClass.prototype.close = function c (cb) {
-    cb()
+  class TestClass {
+    async bootstrap () {}
+    async close () {}
   }
 
-  var myTest = tapeHarness(function testFn (name, fn) {
+  const myTest = tapeHarness(
+    /** @type {tape} */ (/** @type {unknown} */ (tapeLike)),
+    TestClass
+  )
+
+  process.once('uncaughtException', (err) => {
+    assert.equal(err.message, 'it failed')
+    assert.end()
+  })
+
+  myTest('a name', async (_harness, _assert) => {
+    throw new Error('it failed')
+  })
+
+  /**
+   * @param {string} name
+   * @param {Function} fn
+   */
+  function tapeLike (name, fn) {
     assert.equal(name, 'a name')
     fn({
       end: function end () {
@@ -265,31 +331,38 @@ tape('handles thrown exception', function t (assert) {
         assert.ok(false, 'should never be called')
       }
     })
-  }, TestClass)
-
-  process.once('uncaughtException', (err) => {
-    assert.equal(err.message, 'it failed')
-    assert.end()
-  })
-
-  myTest('a name', async function _ (harness, assertLike) {
-    throw new Error('it failed')
-  })
+  }
 })
 
 tape('handles thrown exception but also double end',
   function t (assert) {
-    function TestClass () {}
-
-    TestClass.prototype.bootstrap = function b (cb) {
-      cb()
-    }
-    TestClass.prototype.close = function c (cb) {
-      cb()
+    class TestClass {
+      async bootstrap () {}
+      async close () {}
     }
 
-    var onlyOnce = false
-    var myTest = tapeHarness(function testFn (name, fn) {
+    let onlyOnce = false
+    const myTest = tapeHarness(
+      /** @type {tape} */ (/** @type {unknown} */ (tapeLike)),
+      TestClass
+    )
+
+    process.once('uncaughtException', (err) => {
+      assert.equal(err.message, 'it failed')
+      assert.equal(onlyOnce, true)
+      assert.end()
+    })
+
+    myTest('a name', async (_harness, assertLike) => {
+      assertLike.end()
+      throw new Error('it failed')
+    })
+
+    /**
+     * @param {string} name
+     * @param {Function} fn
+     */
+    function tapeLike (name, fn) {
       assert.equal(name, 'a name')
       fn({
         end: function end () {
@@ -302,16 +375,5 @@ tape('handles thrown exception but also double end',
           assert.ok(false, 'should not be called')
         }
       })
-    }, TestClass)
-
-    process.once('uncaughtException', (err) => {
-      assert.equal(err.message, 'it failed')
-      assert.equal(onlyOnce, true)
-      assert.end()
-    })
-
-    myTest('a name', async function _ (harness, assertLike) {
-      assertLike.end()
-      throw new Error('it failed')
-    })
+    }
   })
