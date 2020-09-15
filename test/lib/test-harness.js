@@ -7,36 +7,36 @@ var http = require('http')
 var tapeHarness = require('../../index.js')
 
 function MyTestHarness (opts) {
-    if (!(this instanceof MyTestHarness)) {
-        return new MyTestHarness(opts)
-    }
+  if (!(this instanceof MyTestHarness)) {
+    return new MyTestHarness(opts)
+  }
 
-    var self = this
+  var self = this
 
-    self.port = opts.port || 0
-    self.server = http.createServer()
+  self.port = opts.port || 0
+  self.server = http.createServer()
 
-    self.server.on('request', onRequest)
+  self.server.on('request', onRequest)
 
-    function onRequest (req, res) {
-        res.end(req.url)
-    }
+  function onRequest (req, res) {
+    res.end(req.url)
+  }
 }
 
 MyTestHarness.prototype.bootstrap = function bootstrap (cb) {
-    var self = this
+  var self = this
 
-    self.server.once('listening', function onListen () {
-        self.port = self.server.address().port
-        cb()
-    })
-    self.server.listen(self.port)
+  self.server.once('listening', function onListen () {
+    self.port = self.server.address().port
+    cb()
+  })
+  self.server.listen(self.port)
 }
 
 MyTestHarness.prototype.close = function close (cb) {
-    var self = this
+  var self = this
 
-    self.server.close(cb)
+  self.server.close(cb)
 }
 
 MyTestHarness.test = tapeHarness(tape, MyTestHarness)
