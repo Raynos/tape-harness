@@ -9,43 +9,48 @@
  * }} Harness
  */
 
+/**
+ * @template {Harness} T
+ * @typedef {{
+      (
+        name: string,
+        cb?: (harness: T, test: Test) => (void | Promise<void>)
+      ): void;
+      (
+        name: string,
+        opts: object,
+        cb: (harness: T, test: Test) => (void | Promise<void>)
+      ): void;
+
+      only(
+        name: string,
+        cb?: (harness: T, test: Test) => (void | Promise<void>)
+      ): void;
+      only(
+        name: string,
+        opts: object,
+        cb: (harness: T, test: Test) => (void | Promise<void>)
+      ): void;
+
+      skip(
+        name: string,
+        cb?: (harness: T, test: Test) => (void | Promise<void>)
+      ): void;
+      skip(
+        name: string,
+        opts: object,
+        cb: (harness: T, test: Test) => (void | Promise<void>)
+      ): void;
+ * }} TapeTestFn
+ */
+
 module.exports = wrapHarness
 
 /**
  * @template {Harness} T
  * @param {import('./types/pre-bundled__tape')} tape
  * @param {new (options: object) => T} Harness
- * @returns {{
-      (
-        name: string,
-        cb?: (harness: T, test: Test) => (void | Promise<void>)
-      ): void;
-      (
-        name: string,
-        opts: object,
-        cb: (harness: T, test: Test) => (void | Promise<void>)
-      ): void;
-
-      only(
-        name: string,
-        cb?: (harness: T, test: Test) => (void | Promise<void>)
-      ): void;
-      only(
-        name: string,
-        opts: object,
-        cb: (harness: T, test: Test) => (void | Promise<void>)
-      ): void;
-
-      skip(
-        name: string,
-        cb?: (harness: T, test: Test) => (void | Promise<void>)
-      ): void;
-      skip(
-        name: string,
-        opts: object,
-        cb: (harness: T, test: Test) => (void | Promise<void>)
-      ): void;
- * }}
+ * @returns {TapeTestFn<T>}
  */
 function wrapHarness (tape, Harness) {
   const harness = new TapeHarness(tape, Harness)
