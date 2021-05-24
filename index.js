@@ -172,9 +172,32 @@ class TapeHarness {
             assert.end()
           }
         }, function fail (promiseError) {
-          process.nextTick(() => {
-            throw promiseError
+          var ret = harness.close((err2) => {
+            if (err2) {
+              console.error('TestHarness.close() has an err', {
+                error: err2
+              })
+            }
+
+            process.nextTick(() => {
+              throw promiseError
+            })
           })
+          if (ret && ret.then) {
+            ret.then(() => {
+              process.nextTick(() => {
+                throw promiseError
+              })
+            }, (/** @type {Error} */ _failure) => {
+              console.error('TestHarness.close() has an err', {
+                error: _failure
+              })
+
+              process.nextTick(() => {
+                throw promiseError
+              })
+            })
+          }
         })
       }
     }
