@@ -63,3 +63,5 @@ coverage
 # All translation files #
 #########################
 static/translations-s3/
+
+package-lock.json
