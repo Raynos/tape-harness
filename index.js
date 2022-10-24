@@ -213,7 +213,7 @@ class TapeHarness {
       const caller = errorLines[2]
 
       // TAP: call through because plan is called internally
-      if (/node_modules[/?][\\?\\?]?tap/.test(caller)) {
+      if (/node_modules[/?][\\?\\?]?(?:lib)?tap/.test(caller)) {
         return _plan.call(assert, count)
       }
 
